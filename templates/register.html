@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}Inscription{% endblock %}
+{% block content %}
+  <div class="form-container mt-5">
+    <h2>Inscription</h2>
+    <form action="{{ url_for('register') }}" method="POST">
+      <div class="mb-3">
+        <label for="first_name" class="form-label">Nom :</label>
+        <input type="text" id="first_name" name="first_name" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label for="last_name" class="form-label">Prénom :</label>
+        <input type="text" id="last_name" name="last_name" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label for="birth_date" class="form-label">Date de naissance :</label>
+        <input type="date" id="birth_date" name="birth_date" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Adresse Email :</label>
+        <input type="email" id="email" name="email" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label for="country" class="form-label">Pays :</label>
+        <input type="text" id="country" name="country" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label for="mobile_number" class="form-label">Numéro de Mobile :</label>
+        <input type="text" id="mobile_number" name="mobile_number" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Mot de Passe :</label>
+        <input type="password" id="password" name="password" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label for="security_question" class="form-label">Question de sécurité :</label>
+        <input type="text" id="security_question" name="security_question" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label for="security_answer" class="form-label">Réponse à la question :</label>
+        <input type="text" id="security_answer" name="security_answer" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-success">S'inscrire</button>
+    </form>
+  </div>
+{% endblock %}

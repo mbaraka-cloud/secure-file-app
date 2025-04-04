@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Modifier l'utilisateur{% endblock %}
+{% block content %}
+  <div class="form-container mt-5">
+    <h2>Modifier l'utilisateur</h2>
+    <form action="{{ url_for('edit_user', user_id=user.id) }}" method="POST">
+      <div class="mb-3">
+        <label for="first_name" class="form-label">Nom :</label>
+        <input type="text" id="first_name" name="first_name" class="form-control" value="{{ user.first_name }}" required>
+      </div>
+      <div class="mb-3">
+        <label for="last_name" class="form-label">Prénom :</label>
+        <input type="text" id="last_name" name="last_name" class="form-control" value="{{ user.last_name }}" required>
+      </div>
+      <div class="mb-3">
+        <label for="birth_date" class="form-label">Date de naissance :</label>
+        <input type="date" id="birth_date" name="birth_date" class="form-control" value="{{ user.birth_date.strftime('%Y-%m-%d') }}" required>
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Adresse Email :</label>
+        <input type="email" id="email" name="email" class="form-control" value="{{ user.email }}" required>
+      </div>
+      <div class="mb-3">
+        <label for="country" class="form-label">Pays :</label>
+        <input type="text" id="country" name="country" class="form-control" value="{{ user.country }}" required>
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Mot de Passe (laisser vide pour conserver l'actuel) :</label>
+        <input type="password" id="password" name="password" class="form-control">
+      </div>
+      <div class="form-check mb-3">
+        <input type="checkbox" class="form-check-input" name="is_admin" id="is_admin" {% if user.is_admin %}checked{% endif %}>
+        <label class="form-check-label" for="is_admin">Définir comme administrateur</label>
+      </div>
+      <button type="submit" class="btn btn-primary">Modifier</button>
+    </form>
+  </div>
+{% endblock %}

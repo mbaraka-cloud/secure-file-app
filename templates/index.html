@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Accueil{% endblock %}
+{% block content %}
+  <div class="text-center mt-5">
+    <h1>Bienvenue sur Secure File App</h1>
+    <p class="lead">Une application sécurisée de gestion de fichiers.</p>
+    <a href="{{ url_for('login') }}" class="btn btn-primary me-2">Se Connecter</a>
+    <a href="{{ url_for('register') }}" class="btn btn-success">S'inscrire</a>
+  </div>
+{% endblock %}

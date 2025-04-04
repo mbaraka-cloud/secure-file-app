@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Vérification SMS{% endblock %}
+{% block content %}
+  <div class="form-container mt-5">
+    <h2>Vérification par SMS</h2>
+    <p>Un code de vérification a été envoyé sur votre mobile. Veuillez saisir le code ci-dessous :</p>
+    <form method="POST">
+      <div class="mb-3">
+        <label for="sms_code" class="form-label">Code SMS :</label>
+        <input type="text" name="sms_code" id="sms_code" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Vérifier</button>
+    </form>
+  </div>
+{% endblock %}
