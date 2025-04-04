@@ -1,15 +1,16 @@
-{% extends 'base.html' %}
-{% block title %}Vérification de sécurité{% endblock %}
+{% extends "base.html" %}
 {% block content %}
-  <div class="form-container mt-5">
-    <h2>Vérification de sécurité</h2>
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h2 class="mb-4">Vérification de sécurité</h2>
     <p>Question de sécurité : <strong>{{ user.security_question }}</strong></p>
-    <form method="POST">
-      <div class="mb-3">
-        <label for="security_answer" class="form-label">Votre réponse :</label>
-        <input type="text" name="security_answer" id="security_answer" class="form-control" required>
+    <form method="post">
+      <div class="form-group">
+        <label for="security_answer">Votre réponse</label>
+        <input type="text" class="form-control" id="security_answer" name="security_answer" required>
       </div>
-      <button type="submit" class="btn btn-primary">Vérifier</button>
+      <button type="submit" class="btn btn-primary btn-block">Valider</button>
     </form>
   </div>
+</div>
 {% endblock %}

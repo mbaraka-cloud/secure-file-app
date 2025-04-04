@@ -1,10 +1,12 @@
-{% extends 'base.html' %}
-{% block title %}Accueil{% endblock %}
+{% extends "base.html" %}
 {% block content %}
-  <div class="text-center mt-5">
-    <h1>Bienvenue sur Secure File App</h1>
-    <p class="lead">Une application sécurisée de gestion de fichiers.</p>
-    <a href="{{ url_for('login') }}" class="btn btn-primary me-2">Se Connecter</a>
-    <a href="{{ url_for('register') }}" class="btn btn-success">S'inscrire</a>
-  </div>
+<div class="text-center">
+  <h1>Bienvenue sur Secure File App</h1>
+  <p>Gérez vos fichiers en toute sécurité.</p>
+  {% if session.get('user_id') %}
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary action-btn">Accéder au Dashboard</a>
+  {% else %}
+    <a href="{{ url_for('login') }}" class="btn btn-primary action-btn">Se connecter</a>
+  {% endif %}
+</div>
 {% endblock %}

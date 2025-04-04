@@ -1,56 +1,44 @@
-{% extends 'base.html' %}
-{% block title %}Dashboard{% endblock %}
+{% extends "base.html" %}
 {% block content %}
 <div class="container">
-    <h2 class="text-center">Dashboard</h2>
-    <div class="d-flex justify-content-center flex-wrap gap-2 mb-3">
-        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Tous</a>
-        <a href="{{ url_for('dashboard', category='image') }}" class="btn btn-info">Images</a>
-        <a href="{{ url_for('dashboard', category='video') }}" class="btn btn-info">Vidéos</a>
-        <a href="{{ url_for('dashboard', category='musique') }}" class="btn btn-info">Musiques</a>
-        <a href="{{ url_for('dashboard', category='document') }}" class="btn btn-info">Documents</a>
-    </div>
-    <div class="d-flex justify-content-center mb-4">
-        <form class="d-flex" action="{{ url_for('dashboard') }}" method="GET">
-            <input class="form-control me-2" type="search" name="q" placeholder="Rechercher un fichier" aria-label="Search">
-            <button class="btn btn-outline-success" type="submit">Rechercher</button>
-        </form>
-    </div>
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Nom original</th>
-                    <th>Catégorie</th>
-                    <th>Date d'upload</th>
-                    <th>Télécharger</th>
-                    {% if User.query.get(session.get('user_id')).is_admin %}
-                        <th>Supprimer</th>
-                    {% endif %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for file in files %}
-                <tr>
-                    <td>{{ file.id }}</td>
-                    <td>{{ file.original_filename }}</td>
-                    <td>{{ file.category }}</td>
-                    <td>{{ file.upload_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                    <td>
-                        <a href="{{ url_for('download_file', file_id=file.id) }}" class="btn btn-sm btn-primary w-100">Télécharger</a>
-                    </td>
-                    {% if User.query.get(session.get('user_id')).is_admin %}
-                        <td>
-                            <form action="{{ url_for('delete_file', file_id=file.id) }}" method="POST">
-                                <button type="submit" class="btn btn-sm btn-danger w-100" onclick="return confirm('Confirmer la suppression ?');">Supprimer</button>
-                            </form>
-                        </td>
-                    {% endif %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+  <h2 class="mb-4">Dashboard</h2>
+  <form class="form-inline mb-4" method="get" action="{{ url_for('dashboard') }}">
+    <input type="text" class="form-control mr-2" name="q" placeholder="Rechercher un fichier">
+    <button type="submit" class="btn btn-outline-primary">Rechercher</button>
+  </form>
+  {% if files %}
+  <div class="table-responsive">
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Nom du fichier</th>
+          <th>Catégorie</th>
+          <th>Date d'upload</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for file in files %}
+        <tr>
+          <td>{{ file.original_filename }}</td>
+          <td>{{ file.category }}</td>
+          <td>{{ file.upload_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td>
+            <a href="{{ url_for('download_file', file_id=file.id) }}" class="btn btn-success btn-sm action-btn">Télécharger</a>
+            <form action="{{ url_for('delete_file', file_id=file.id) }}" method="post" style="display:inline;">
+                {% if session['role'] == 'admin' %}
+                <button type="submit" class="btn btn-danger btn-sm action-btn">Supprimer</button>
+            {% endif %}
+            
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>Aucun fichier à afficher.</p>
+  {% endif %}
 </div>
 {% endblock %}

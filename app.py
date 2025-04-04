@@ -2,8 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_mail import Mail, Message
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+# Les imports de flask_limiter ont été supprimés afin de retirer les restrictions sur le nombre de téléchargements et de sessions
 from config import Config
 from models import db, User, File
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -30,9 +29,6 @@ app.config['MAIL_PASSWORD'] = 'uydovounyaltkwjn'  # Mot de passe d'application s
 app.config['MAIL_DEFAULT_SENDER'] = 'tsarafarah@gmail.com'
 mail = Mail(app)
 # --------------------------------------------------------------
-
-limiter = Limiter(key_func=get_remote_address)
-limiter.init_app(app)
 
 # Définir le dossier uploads en chemin absolu
 UPLOAD_FOLDER = os.path.join(app.root_path, app.config['UPLOAD_FOLDER'])
@@ -78,6 +74,7 @@ ALLOWED_EXTENSIONS = {
     'zip', 'rar', '7z', 'tar', 'gz',                     # Archives
     'exe'  # Applications exécutables
 }
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -129,8 +126,8 @@ def home():
     return render_template('index.html')
 
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5 per hour")
 def login():
+    # Note : La restriction "5 per hour" a été supprimée
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
@@ -323,8 +320,8 @@ def dashboard():
     return render_template('dashboard.html', files=files)
 
 @app.route('/download/<int:file_id>')
-@limiter.limit("2 per hour", exempt_when=lambda: User.query.get(session.get('user_id', 0)).is_admin)
 def download_file(file_id):
+    # La restriction "3 per hour" a été supprimée
     if 'user_id' not in session:
         return redirect(url_for('login'))
     file_record = File.query.get_or_404(file_id)
@@ -349,25 +346,32 @@ def download_file(file_id):
 def delete_file(file_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
+    current_user = User.query.get(session['user_id'])
+    if not current_user.is_admin:
+        flash("Vous n'avez pas les droits pour supprimer des fichiers.", "danger")
+        return redirect(url_for('dashboard'))
+
     file_record = File.query.get_or_404(file_id)
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], file_record.stored_filename)
+    
     if os.path.exists(file_path):
         os.remove(file_path)
+    
     db.session.delete(file_record)
     db.session.commit()
-    flash("Fichier supprimé", "success")
+    
+    flash("Fichier supprimé avec succès", "success")
     return redirect(url_for('dashboard'))
 
-### Réinitialisation du mot de passe
-# Option : Réinitialisation via question de sécurité et code SMS simulé
 
+### Réinitialisation du mot de passe
 @app.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
     if request.method == 'POST':
         email = request.form['email']
         user = User.query.filter_by(email=email).first()
         if user:
-            # Redirection vers la vérification de la question de sécurité
             return redirect(url_for('verify_security', user_id=user.id))
         else:
             flash("Aucun utilisateur trouvé avec cet email", "danger")
@@ -379,10 +383,8 @@ def verify_security(user_id):
     if request.method == 'POST':
         answer = request.form['security_answer']
         if check_password_hash(user.security_answer_hash, answer):
-            # Si la réponse est correcte, simuler l'envoi d'un code SMS
-            sms_code = "123456"  # Pour l'exemple, code statique (à remplacer par une génération dynamique)
-            # En production, intégrer un service SMS ici (Twilio, Nexmo, etc.)
-            print(f"Code SMS envoyé à {user.mobile_number} : {sms_code}")  # Debug: afficher le code dans la console
+            sms_code = "123456"  # Code statique pour l'exemple
+            print(f"Code SMS envoyé à {user.mobile_number} : {sms_code}")
             session['sms_code'] = sms_code
             session['reset_user_id'] = user.id
             return redirect(url_for('verify_sms'))
@@ -395,9 +397,10 @@ def verify_sms():
     if request.method == 'POST':
         code_entered = request.form['sms_code']
         if code_entered == session.get('sms_code'):
-            # Le code est correct, générer un token de réinitialisation et rediriger vers reset_password
             user = User.query.get(session.get('reset_user_id'))
-            token = user.get_reset_token()
+            from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+            s = Serializer(app.config['SECRET_KEY'], expires_in=3600)
+            token = s.dumps({'user_id': user.id}).decode('utf-8')
             flash("Le code est validé. Vous pouvez maintenant réinitialiser votre mot de passe.", "success")
             return redirect(url_for('reset_password', token=token))
         else:

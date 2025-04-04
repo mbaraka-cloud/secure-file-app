@@ -87,17 +87,29 @@ button.btn {
   margin-left: 10px;
 }
 
-/* Correction du footer */
+/* Uniformisation des boutons d'action (ex. Télécharger, Supprimer) */
+.action-btn {
+  width: 140px;
+  height: 45px;
+  margin: 2px;
+}
+
+/* Footer fixé en bas pour desktop */
 footer {
   background-color: #343a40;
   color: #ffffff;
   text-align: center;
   padding: 15px 0;
-  margin-top: 15px;
   width: 100%;
-  position: relative;
+  position: fixed;
   bottom: 0;
-  z-index: 2;
+  left: 0;
+  z-index: 1000;
+}
+
+/* Ajout d'une marge inférieure au contenu pour éviter le chevauchement avec le footer */
+.main-content {
+  padding-bottom: 60px; /* Ajuster selon la hauteur du footer */
 }
 
 footer p {
@@ -125,7 +137,12 @@ footer p:hover {
       font-size: 0.9rem;
   }
 
+  /* Pour les écrans mobiles, le footer redeviendra statique */
   footer {
-      position: relative;
+    position: static;
   }
+}
+
+a, button {
+  transition: color 0.3s ease, background-color 0.3s ease;
 }

@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center">
+  <h1>Erreur 500</h1>
+  <p>Une erreur interne est survenue. Veuillez réessayer plus tard.</p>
+  <a href="{{ url_for('home') }}" class="btn btn-primary">Retour à l'accueil</a>
+</div>
+{% endblock %}
