@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}403 • SecureFileApp{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto bg-white rounded shadow p-6 text-center">
+  <h1 class="text-2xl font-semibold mb-2">Accès refusé (403)</h1>
+  <p class="text-gray-600 mb-4">Vous n’avez pas l’autorisation d’accéder à cette ressource.</p>
+  <a href="{{ url_for('main.index') }}" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Retour à l’accueil</a>
+</div>
+{% endblock %}

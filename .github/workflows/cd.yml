@@ -1,0 +1,34 @@
+name: CD
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy repo to server (rsync over ssh)
+        uses: burnett01/rsync-deployments@7.0.0
+        with:
+          switches: -az --delete
+          path: .
+          remote_path: ${{ secrets.SSH_REMOTE_PATH }}
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_user: ${{ secrets.SSH_USER }}
+          remote_key: ${{ secrets.SSH_KEY }}
+
+      - name: Docker compose up
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ${{ secrets.SSH_REMOTE_PATH }}
+            docker compose pull || true
+            docker compose build --no-cache
+            docker compose up -d
+            # Healthcheck
+            curl -kfsS https://localhost/healthz || (docker compose logs --no-color web | tail -n 200; exit 1)

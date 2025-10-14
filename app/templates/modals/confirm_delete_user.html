@@ -1,0 +1,41 @@
+<div id="hx-modal" data-modal class="fixed inset-0 z-[9998] flex items-center justify-center">
+  <div data-backdrop class="absolute inset-0 bg-black/40"></div>
+  <div class="relative bg-white rounded shadow p-4 w-[90%] max-w-md z-[9999]">
+    <h3 class="text-lg font-semibold mb-2">Supprimer l’utilisateur</h3>
+
+    {% if last_admin %}
+      <p class="text-sm text-red-700 mb-3">
+        Impossible de supprimer le dernier administrateur.
+      </p>
+      <div class="flex items-center justify-end">
+        <button type="button" class="px-3 py-2 rounded border" data-close-modal>Fermer</button>
+      </div>
+    {% else %}
+      <p class="text-sm text-gray-700 mb-3">
+        Voulez-vous vraiment supprimer <strong>{{ u.email }}</strong> ?
+        {% if files_count and files_count > 0 %}
+          <br>Il possède <strong>{{ files_count }}</strong> fichier(s) — ils seront supprimés définitivement.
+        {% endif %}
+      </p>
+      <form
+        hx-post="{{ url_for('admin.delete_user', user_id=u.id) }}"
+        hx-target="#user-row-{{ u.id }}"
+        hx-swap="delete"
+        class="flex items-center justify-end gap-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="button" class="px-3 py-2 rounded border" data-close-modal>Annuler</button>
+        <button type="submit" class="px-3 py-2 rounded bg-red-600 text-white hover:bg-red-700">Supprimer</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+<script>
+  // Fermeture manuelle quand on clique sur le backdrop ou sur [data-close-modal]
+  (function(){
+    const modal = document.getElementById('hx-modal');
+    if(!modal) return;
+    function close(){ modal.outerHTML = ''; }
+    modal.querySelector('[data-backdrop]')?.addEventListener('click', close);
+    modal.querySelector('[data-close-modal]')?.addEventListener('click', close);
+  })();
+</script>

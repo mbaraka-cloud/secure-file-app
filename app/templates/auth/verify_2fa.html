@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-6 p-6 bg-white rounded-xl shadow">
+  <h2 class="text-xl font-semibold text-center mb-4">Vérification 2FA</h2>
+  <form method="POST" action="{{ url_for('auth.verify_2fa') }}" class="space-y-3">
+    {{ form.hidden_tag() }}
+
+    <div>
+      {{ form.token.label(class="block mb-1 text-gray-700") }}
+      {{ form.token(class="input w-full", placeholder="Entrez le code TOTP") }}
+    </div>
+
+    <button type="submit" class="btn w-full bg-blue-500 text-white">Vérifier</button>
+  </form>
+</div>
+{% endblock %}

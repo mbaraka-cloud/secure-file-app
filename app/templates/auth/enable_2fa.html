@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md space-y-4 mt-10">
+  <h2 class="text-xl font-bold text-center">Activer la double authentification (2FA)</h2>
+  <p class="text-sm text-gray-600 text-center">
+    Scannez le QR Code avec Google Authenticator ou toute application compatible TOTP :
+  </p>
+
+  <form action="{{ url_for('auth.confirm_enable_2fa') }}" method="POST" class="space-y-4">
+    {{ form.hidden_tag() }}  <!-- ✅ CSRF token injecté -->
+
+    {% if qr_code %}
+      <img src="{{ qr_code }}" alt="QR Code 2FA" class="my-4 w-48 mx-auto" />
+    {% else %}
+      <div class="text-xs bg-yellow-50 text-yellow-800 p-3 rounded">
+        Impossible de générer une image de QR-code sur ce serveur. Ajoutez manuellement ce secret à votre application :<br>
+        <code class="break-all">{{ otp_uri }}</code>
+      </div>
+    {% endif %}
+
+    <label for="code" class="block text-sm font-medium text-gray-700">Code à 6 chiffres</label>
+    <input
+      type="text"
+      name="code"
+      id="code"
+      placeholder="123456"
+      required
+      class="input w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:border-blue-300"
+    >
+
+    <button
+      type="submit"
+      class="w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+    >
+      Valider le code
+    </button>
+  </form>
+</div>
+{% endblock %}

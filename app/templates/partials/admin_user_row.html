@@ -1,0 +1,75 @@
+<tr id="user-row-{{ u.id }}">
+  <td class="px-4 py-2 text-sm text-gray-700">{{ u.id }}</td>
+  <td class="px-4 py-2 text-sm text-gray-900 font-medium">{{ u.username }}</td>
+  <td class="px-4 py-2 text-sm text-gray-700">{{ u.email }}</td>
+  <td class="px-4 py-2">
+    {% if u_is_admin %}
+      <span class="inline-flex items-center px-2 py-1 text-xs rounded bg-purple-100 text-purple-700 border border-purple-200">Admin</span>
+    {% else %}
+      <span class="inline-flex items-center px-2 py-1 text-xs rounded bg-gray-100 text-gray-700 border border-gray-200">Utilisateur</span>
+    {% endif %}
+  </td>
+  <td class="px-4 py-2 text-right">
+    <div class="inline-flex gap-2 items-center">
+      {% if not u_is_admin %}
+        <form
+          method="post"
+          hx-post="{{ url_for('admin.promote_user', user_id=u.id) }}"
+          hx-target="#user-row-{{ u.id }}"
+          hx-swap="outerHTML"
+          hx-disabled-elt="button"
+          hx-vals="{}"
+          hx-headers='{"X-CSRFToken":"{{ csrf_token() }}"}'
+          hx-confirm="Voulez-vous vraiment promouvoir {{ u.username }} en administrateur ?"
+          hx-push-url="false"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn px-3 py-1 rounded border bg-green-600 text-white hover:bg-green-700">
+            Promouvoir
+          </button>
+          <span class="htmx-indicator text-xs text-gray-500 ml-1">…</span>
+        </form>
+      {% else %}
+        {% if not (current_user and current_user.id == u.id) %}
+        <form
+          method="post"
+          hx-post="{{ url_for('admin.demote_user', user_id=u.id) }}"
+          hx-target="#user-row-{{ u.id }}"
+          hx-swap="outerHTML"
+          hx-disabled-elt="button"
+          hx-vals="{}"
+          hx-headers='{"X-CSRFToken":"{{ csrf_token() }}"}'
+          hx-confirm="Voulez-vous vraiment rétrograder {{ u.username }} en simple utilisateur ?"
+          hx-push-url="false"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn px-3 py-1 rounded border bg-gray-500 text-white hover:bg-gray-600">
+            Rétrograder
+          </button>
+          <span class="htmx-indicator text-xs text-gray-500 ml-1">…</span>
+        </form>
+        {% endif %}
+      {% endif %}
+
+      {% if not (current_user and current_user.id == u.id) %}
+      <form
+        method="post"
+        hx-post="{{ url_for('admin.delete_user', user_id=u.id) }}"
+        hx-target="#user-row-{{ u.id }}"
+        hx-swap="delete"
+        hx-disabled-elt="button"
+        hx-vals="{}"
+        hx-headers='{"X-CSRFToken":"{{ csrf_token() }}"}'
+        hx-confirm="Supprimer définitivement l'utilisateur {{ u.username }} ?"
+        hx-push-url="false"
+      >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn px-3 py-1 rounded border bg-red-600 text-white hover:bg-red-700">
+          Supprimer
+        </button>
+        <span class="htmx-indicator text-xs text-gray-500 ml-1">…</span>
+      </form>
+      {% endif %}
+    </div>
+  </td>
+</tr>

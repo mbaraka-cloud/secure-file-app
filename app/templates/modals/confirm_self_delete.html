@@ -1,0 +1,39 @@
+<div id="hx-modal" data-modal class="fixed inset-0 z-[9998] flex items-center justify-center">
+    <div data-backdrop class="absolute inset-0 bg-black/40"></div>
+    <div class="relative bg-white rounded shadow p-4 w-[90%] max-w-md z-[9999]">
+      <h3 class="text-lg font-semibold mb-2">Supprimer mon compte</h3>
+  
+      {% if last_admin %}
+        <p class="text-sm text-red-700 mb-3">
+          Impossible de supprimer votre compte : vous êtes le <strong>dernier administrateur</strong>.
+          Créez un autre admin ou rétrogradez-vous avant.
+        </p>
+        <div class="flex items-center justify-end">
+          <button type="button" class="px-3 py-2 rounded border" data-close-modal>Fermer</button>
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-700 mb-3">
+          Cette action est <strong>définitive</strong>. Tous vos fichiers, partages et données associées seront supprimés.
+        </p>
+        <form
+          hx-post="{{ url_for('main.me_delete') }}"
+          hx-target="#hx-modal"
+          hx-swap="outerHTML"
+          class="space-y-3"
+        >
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label class="block text-sm">
+            Mot de passe :
+            <input type="password" name="password" class="mt-1 w-full border rounded px-3 py-2" required>
+          </label>
+          <div class="flex items-center justify-end gap-2">
+            <button type="button" class="px-3 py-2 rounded border" data-close-modal>Annuler</button>
+            <button type="submit" class="px-3 py-2 rounded bg-red-600 text-white hover:bg-red-700">
+              Supprimer mon compte
+            </button>
+          </div>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+  

@@ -1,0 +1,95 @@
+{# === Bloc "Mes fichiers" pour la page d’accueil === #}
+<div class="space-y-4">
+
+  <!-- Barre de recherche -->
+  <form id="search-form" class="space-y-3" hx-boost="false">
+    <div class="relative">
+      <input
+        type="text"
+        name="q"
+        id="q"
+        value="{{ q or '' }}"
+        class="w-full px-3 py-2 border rounded"
+        placeholder="Rechercher par nom…"
+        autocomplete="off"
+        hx-get="{{ url_for('main.suggest_files') }}"
+        hx-trigger="keyup changed delay:300ms"
+        hx-target="#suggestions"
+        hx-swap="outerHTML"
+      />
+      <div id="suggestions"></div>
+    </div>
+
+    <!-- Catégories -->
+    <div class="flex flex-wrap gap-2">
+      {% for cat, n in cats_with_counts %}
+        <button
+          type="button"
+          class="px-3 py-1 rounded border {{ 'bg-gray-200' if (selected_category or 'Tous') == cat else 'bg-white' }}"
+          hx-get="{{ url_for('main.filter_files') }}"
+          hx-include="#search-form"
+          hx-vals='{"category": "{{ cat }}", "page": 1}'
+          hx-target="#my-files-list"
+          hx-swap="outerHTML"
+        >
+          {{ cat }} ({{ n }})
+        </button>
+      {% endfor %}
+    </div>
+
+    <!-- Tri / ordre -->
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-gray-600">Trier par :</span>
+      <button type="button"
+              class="px-2 py-1 border rounded"
+              hx-get="{{ url_for('main.filter_files') }}"
+              hx-include="#search-form"
+              hx-vals='{"sort":"date","page":1}'
+              hx-target="#my-files-list" hx-swap="outerHTML">Date</button>
+      <button type="button"
+              class="px-2 py-1 border rounded"
+              hx-get="{{ url_for('main.filter_files') }}"
+              hx-include="#search-form"
+              hx-vals='{"sort":"name","page":1}'
+              hx-target="#my-files-list" hx-swap="outerHTML">Nom</button>
+
+      <span class="ml-3 text-sm text-gray-600">Ordre :</span>
+      <button type="button"
+              class="px-2 py-1 border rounded"
+              hx-get="{{ url_for('main.filter_files') }}"
+              hx-include="#search-form"
+              hx-vals='{"dir":"asc","page":1}'
+              hx-target="#my-files-list" hx-swap="outerHTML">Asc</button>
+      <button type="button"
+              class="px-2 py-1 border rounded"
+              hx-get="{{ url_for('main.filter_files') }}"
+              hx-include="#search-form"
+              hx-vals='{"dir":"desc","page":1}'
+              hx-target="#my-files-list" hx-swap="outerHTML">Desc</button>
+    </div>
+  </form>
+
+  <!-- Liste (chargée dynamiquement) -->
+  <div id="my-files-list"
+       class="bg-white shadow rounded p-4 text-gray-500 italic">
+    Chargement…
+  </div>
+
+  <!-- Chargement initial automatique de la liste -->
+  <div hx-get="{{ url_for('main.filter_files') }}"
+       hx-include="#search-form"
+       hx-trigger="load"
+       hx-target="#my-files-list"
+       hx-swap="outerHTML"></div>
+
+</div>
+
+<script>
+  // petit helper pour fermer les suggestions après clic
+  document.addEventListener('click', function(e){
+    if(e.target && e.target.dataset && e.target.dataset.clearSuggestions){
+      var box = document.getElementById('suggestions');
+      if (box) box.innerHTML = '';
+    }
+  }, false);
+</script>

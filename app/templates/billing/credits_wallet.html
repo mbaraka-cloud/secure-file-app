@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-4">Mon porte-monnaie</h1>
+
+  <div class="mb-6 p-4 rounded border">
+    <div class="text-lg">Solde: <span class="font-semibold">{{ wallet.balance_credits }}</span> crédits</div>
+    <p class="text-sm text-gray-600 mt-1">
+      Règle : 1 crédit de session + 1 crédit / {{ config.get('BILLING_CREDIT_PALIER_MO', 500) }} Mo transférés.
+    </p>
+  </div>
+
+  <h2 class="text-xl font-semibold mb-2">Acheter des crédits</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {% for credits, amount, currency, label in packs %}
+      <div class="p-4 rounded border">
+        <div class="font-semibold">{{ label }}</div>
+        <div class="text-sm text-gray-600">{{ credits }} crédits</div>
+        <button class="mt-3 px-4 py-2 rounded bg-blue-600 text-white js-buy-credits"
+                type="button"
+                data-pack-index="{{ loop.index0 }}">
+          Acheter
+        </button>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- JS global (pas d'inline pour respecter la CSP) -->
+<script src="{{ url_for('static', filename='js/billing.js') }}"></script>
+{% endblock %}

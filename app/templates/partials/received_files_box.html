@@ -1,0 +1,51 @@
+<div class="bg-white rounded" id="received-box">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <h2 class="text-lg font-semibold">Fichiers reçus</h2>
+        <div class="text-sm text-gray-500">Partagés avec vous par d’autres utilisateurs</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700 border">
+          Total : <strong class="ml-1">{{ received_total }}</strong>
+        </span>
+        <button
+          class="px-2 py-1 text-sm rounded border bg-gray-50 hover:bg-gray-100"
+          hx-get="{{ url_for('main.received_box') }}"
+          hx-target="#received-box"
+          hx-swap="outerHTML"
+        >
+          Rafraîchir
+        </button>
+        <a href="{{ url_for('main.shared_list') }}" class="text-sm text-indigo-700 hover:underline">Tout voir →</a>
+      </div>
+    </div>
+  
+    <div>
+      {% if recent_received %}
+        <ul class="divide-y">
+          {% for r in recent_received %}
+          <li class="py-2 flex items-center justify-between">
+            <div class="min-w-0">
+              <div class="truncate font-medium">
+                {{ r.filename or 'Fichier' }}
+                <span class="text-gray-400 text-xs ml-2">#{{ r.file_id }}</span>
+              </div>
+              <div class="text-xs text-gray-500 truncate">
+                De <span class="font-medium">{{ r.owner_name or '—' }}</span>
+                {% if r.size_bytes is not none %} • {{ (r.size_bytes // 1024) }} Ko{% endif %}
+                {% if r.file_created_at %} • {{ r.file_created_at }}{% endif %}
+              </div>
+            </div>
+            <a href="{{ url_for('main.shared_download_one', file_id=r.file_id) }}"
+               class="ml-3 shrink-0 px-3 py-1 rounded bg-gray-700 text-white hover:bg-gray-800 text-sm">
+              Télécharger
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-gray-500 text-sm">Aucun fichier reçu pour le moment.</p>
+      {% endif %}
+    </div>
+  </div>
+  

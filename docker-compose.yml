@@ -1,0 +1,125 @@
+# docker-compose.yml
+services:
+  web:
+    build: .
+    image: secure-file-app:latest
+    env_file:
+      - .env.production
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./instance:/app/instance
+      - ./keys:/app/keys
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+    environment:
+      # Base
+      APP_CONFIG: "production"
+      SECRET_KEY: "${SECRET_KEY:-please-change}"
+      SECURITY_PASSWORD_SALT: "${SECURITY_PASSWORD_SALT:-change-me}"
+
+      # DB (SQLAlchemy / Postgres dans le même réseau docker)
+      DATABASE_URL: "postgresql+psycopg2://${POSTGRES_USER:-secureuser}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-secureapp}"
+
+      # Limiter sur Redis
+      LIMITER_STORAGE_URI: "redis://redis:6379/0"
+
+      # Billing / crédits
+      BILLING_CREDIT_PALIER_MO: "${BILLING_CREDIT_PALIER_MO:-500}"
+      BILLING_SESSION_FEE_CREDITS: "${BILLING_SESSION_FEE_CREDITS:-1}"
+      BILLING_DEBIT_IDEMPOTENCY_WINDOW_SEC: "${BILLING_DEBIT_IDEMPOTENCY_WINDOW_SEC:-20}"
+
+      # Reset mot de passe
+      PASSWORD_RESET_TOKEN_MAX_AGE: "${PASSWORD_RESET_TOKEN_MAX_AGE:-3600}"
+      PASSWORD_MIN_LENGTH: "${PASSWORD_MIN_LENGTH:-8}"
+
+      # Mail (email_utils) — par défaut en "console"
+      MAIL_MODE: "${MAIL_MODE:-console}"
+      MAIL_DEFAULT_SENDER: "${MAIL_DEFAULT_SENDER:-no-reply@securefile.local}"
+      MAIL_SERVER: "${MAIL_SERVER:-smtp}"
+      MAIL_PORT: "${MAIL_PORT:-25}"
+      MAIL_USE_TLS: "${MAIL_USE_TLS:-False}"
+      MAIL_USE_SSL: "${MAIL_USE_SSL:-False}"
+      MAIL_USERNAME: "${MAIL_USERNAME:-}"
+      MAIL_PASSWORD: "${MAIL_PASSWORD:-}"
+
+      # Stripe (facultatif si non utilisé)
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
+      STRIPE_PUBLISHABLE_KEY: "${STRIPE_PUBLISHABLE_KEY:-}"
+      STRIPE_WEBHOOK_SECRET: "${STRIPE_WEBHOOK_SECRET:-}"
+      STRIPE_SUCCESS_URL: "${STRIPE_SUCCESS_URL:-}"
+      STRIPE_CANCEL_URL: "${STRIPE_CANCEL_URL:-}"
+
+      # RSA keys (montés via volume ./keys)
+      RSA_PUBLIC_KEY_PATH: "/app/keys/rsa_public.pem"
+      RSA_PRIVATE_KEY_PATH: "/app/keys/rsa_private.pem"
+
+      # Démarrage Gunicorn (variables de tunning)
+      SKIP_DB_MIGRATIONS: "false"
+      MIGRATION_TIMEOUT_SECS: "120"
+      GUNICORN_WORKERS: "2"
+      GUNICORN_TIMEOUT: "3600"
+    healthcheck:
+      # 1) test socket (port ouvert = Gunicorn écoute)
+      # 2) test HTTP /healthz (si Flask/Talisman est OK)
+      test: ["CMD-SHELL", "python - <<'PY'\nimport socket,sys; s=socket.socket(); s.settimeout(2); \ntry:\n  s.connect(('127.0.0.1',8000)); s.close()\nexcept Exception:\n  sys.exit(1)\nimport urllib.request; \ntry:\n  urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)\nexcept Exception:\n  pass\nsys.exit(0)\nPY"]
+      interval: 5s
+      timeout: 5s
+      start_period: 180s
+      retries: 60
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./.nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs/fullchain.pem:/etc/ssl/certs/fullchain.pem:ro
+      - ./certs/privkey.pem:/etc/ssl/private/privkey.pem:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server","--appendonly","yes"]
+    volumes:
+      - ./data/redis:/data
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-secureapp}
+      POSTGRES_USER: ${POSTGRES_USER:-secureuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backup:
+    image: postgres:16-alpine
+    command: >
+      sh -lc 'while true; do
+        pg_dump -U "$$POSTGRES_USER" -h postgres "$$POSTGRES_DB" > /backups/db-$(date +%F-%H%M).sql &&
+        find /backups -type f -name "db-*.sql" -mtime +7 -delete ;
+        sleep 86400;
+      done'
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-secureapp}
+      POSTGRES_USER: ${POSTGRES_USER:-secureuser}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes: {}

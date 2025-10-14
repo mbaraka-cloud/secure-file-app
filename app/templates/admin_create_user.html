@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Créer un utilisateur{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">➕ Créer un nouvel utilisateur</h1>
+
+<div class="bg-white shadow rounded p-4">
+  <form method="post" action="{{ url_for('admin.create_user') }}" class="grid md:grid-cols-4 gap-3">
+    {{ form.hidden_tag() }}
+    <div>
+      <label class="block text-sm font-medium mb-1">Nom d'utilisateur</label>
+      {{ form.username(class_="w-full border rounded px-3 py-2") }}
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">Email</label>
+      {{ form.email(class_="w-full border rounded px-3 py-2") }}
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">Mot de passe</label>
+      {{ form.password(class_="w-full border rounded px-3 py-2") }}
+    </div>
+    <div>
+      <label class="block text-sm font-medium mb-1">Rôle</label>
+      {{ form.role(class_="w-full border rounded px-3 py-2") }}
+    </div>
+    <div class="md:col-span-4 flex gap-3">
+      <button class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Créer</button>
+      <a href="{{ url_for('admin.dashboard') }}" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+flask==3.0.3
+flask-sqlalchemy==3.1.1
+flask-login==0.6.3
+flask-wtf==1.2.1
+flask-limiter==3.6.0
+flask-migrate==4.0.7
+flask-talisman==1.1.0
+python-dotenv==1.0.1
+pycryptodome==3.20.0
+pyotp==2.9.0
+qrcode==7.4.2
+pillow==10.4.0
+waitress==3.0.0
+
+# Stripe (paiement)
+stripe==10.9.0
+
+# WTForms email()
+email_validator==2.2.0
+
+gunicorn==22.0.0
+psycopg2-binary==2.9.9
+python-magic==0.4.27
+redis==5.0.8

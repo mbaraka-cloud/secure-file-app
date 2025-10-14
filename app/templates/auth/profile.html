@@ -1,0 +1,72 @@
+<!-- templates/profile.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto p-6 bg-white rounded-xl shadow-md">
+    <h2 class="text-xl font-bold mb-4">Mon profil</h2>
+    <p><strong>Nom :</strong> {{ current_user.username }}</p>
+    <p><strong>Email :</strong> {{ current_user.email }}</p>
+
+    <div class="mt-4">
+        <h3 class="font-semibold">Authentification à deux facteurs (2FA)</h3>
+        {% if current_user.two_factor_enabled %}
+            <p class="text-green-600 mt-2">✅ Activée</p>
+            <form action="{{ url_for('auth.disable_2fa') }}" method="POST">
+                <button type="submit" class="bg-red-500 text-white px-4 py-2 rounded mt-2">Désactiver 2FA</button>
+            </form>
+        {% else %}
+            <p class="text-yellow-600 mt-2">⚠️ Non activée</p>
+            <a href="{{ url_for('auth.enable_2fa') }}" class="bg-blue-500 text-white px-4 py-2 rounded mt-2 inline-block">Activer 2FA</a>
+        {% endif %}
+    </div>
+    <!-- Zone où HTMX injecte la modale -->
+<div id="modal-root"></div>
+
+<!-- Carte “Supprimer mon compte” -->
+<div class="mt-6 bg-white shadow rounded p-4">
+  <h2 class="text-lg font-semibold mb-2">Suppression du compte</h2>
+  <p class="text-sm text-gray-600 mb-3">
+    Cette action est définitive. Vos fichiers chiffrés et partages associés seront supprimés.
+  </p>
+
+  <button
+    class="px-3 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+    hx-get="{{ url_for('auth.me_delete_modal') }}"
+    hx-target="#modal-root"
+    hx-swap="innerHTML"
+    hx-headers='{"X-CSRFToken":"{{ csrf_token() }}"}'>
+    Supprimer mon compte
+  </button>
+</div>
+
+<script>
+  // Fallback toast local si le header HX-Trigger est présent (comme dans admin_panel.html)
+  (function () {
+    function showToast(msg, variant) {
+      const t = document.createElement('div');
+      t.textContent = msg || 'OK';
+      t.className = 'fixed bottom-4 right-4 z-50 px-4 py-2 rounded text-white shadow';
+      t.style.background = (variant === 'danger') ? '#dc2626'
+                       : (variant === 'info') ? '#2563eb'
+                       : '#16a34a';
+      document.body.appendChild(t);
+      setTimeout(() => t.remove(), 2200);
+    }
+    function handleTriggerFrom(xhr) {
+      const trig = xhr && xhr.getResponseHeader && xhr.getResponseHeader('HX-Trigger');
+      if (!trig) return;
+      try {
+        const data = JSON.parse(trig);
+        if (data.toast) showToast(data.toast.message, data.toast.variant);
+      } catch (e) {}
+    }
+    document.body.addEventListener('htmx:afterOnLoad', function (evt) {
+      handleTriggerFrom(evt.detail && evt.detail.xhr);
+    });
+    document.body.addEventListener('htmx:responseError', function (evt) {
+      handleTriggerFrom(evt.detail && evt.detail.xhr);
+    });
+  })();
+</script>
+
+</div>
+{% endblock %}

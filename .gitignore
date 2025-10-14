@@ -1,0 +1,27 @@
+# Envs & secrets
+.env
+.env.*
+
+# Bases & volumes locaux
+data/
+volumes/
+postgres/
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Logs
+*.log
+
+# OS/IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

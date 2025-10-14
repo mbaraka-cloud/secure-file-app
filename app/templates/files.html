@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Mes fichiers{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold">📁 Mes fichiers</h1>
+    <a href="{{ url_for('main.upload_file') }}" class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700">
+      ➕ Upload
+    </a>
+  </div>
+
+  <!-- Barre d’info (crédits / formule) -->
+  <div class="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-900">
+    <div class="font-semibold mb-1">Facturation Option A (prix par lot)</div>
+    <ul class="list-disc ml-5 space-y-1">
+      <li>Coût = <strong>1 crédit de session</strong> + <strong>1 crédit par tranche de {{ palier_mo or 500 }} Mo</strong> du lot sélectionné.</li>
+      <li>Exemples : 500 Mo → 2 crédits (1 + 1) ; 3 Go → 7 crédits (1 + floor(3000/{{ palier_mo or 500 }})).</li>
+      <li>Le débit s’applique <strong>une seule fois</strong> pour le lot (ZIP ou “fichiers séparés”).</li>
+    </ul>
+  </div>
+
+  <!-- Onglets catégories + recherche -->
+  <form id="search-form" class="space-y-3" onsubmit="return false;">
+    <div class="flex flex-wrap gap-2">
+      <!-- Ces boutons ne déclenchent que le chargement de la liste via HTMX -->
+      {% set cats = ['Tous','Document','Image','Audio','Vidéo','Logiciel','Archive','Autre'] %}
+      {% for cat in cats %}
+      <button
+        type="button"
+        class="px-3 py-1 rounded border bg-white hover:bg-gray-100"
+        hx-get="{{ url_for('main.filter_files') }}?category={{ cat }}"
+        hx-include="#search-form"
+        hx-target="#files-list"
+        hx-swap="outerHTML"
+        data-cat="{{ cat }}">{{ cat }}</button>
+      {% endfor %}
+    </div>
+
+    <div class="flex gap-2">
+      <input type="search" name="q" placeholder="Rechercher par nom…"
+             class="w-full md:w-1/2 border rounded px-3 py-2 focus:outline-none focus:ring"
+             autocomplete="off"
+             hx-get="{{ url_for('main.filter_files') }}"
+             hx-include="#search-form"
+             hx-target="#files-list"
+             hx-swap="outerHTML"
+             hx-trigger="input changed delay:300ms">
+      <button type="button"
+              class="px-3 py-2 rounded bg-gray-700 text-white hover:bg-gray-800"
+              hx-get="{{ url_for('main.filter_files') }}"
+              hx-include="#search-form"
+              hx-target="#files-list"
+              hx-swap="outerHTML">
+        Rechercher
+      </button>
+    </div>
+
+    <!-- paramètres cachés de tri/pagination -->
+    <input type="hidden" name="category" value="Tous">
+    <input type="hidden" name="sort" value="date">
+    <input type="hidden" name="dir" value="desc">
+    <input type="hidden" name="page" value="1">
+    <input type="hidden" name="per_page" value="20">
+  </form>
+
+  <!-- Commandes "bulk" identiques à la page Partagés -->
+  <form id="my-files-form" class="space-y-3" method="get" action="{{ url_for('main.my_download_selected') }}">
+    <div class="flex flex-wrap items-center gap-3 mb-1">
+      <div class="inline-flex items-center gap-2 select-none">
+        <input type="checkbox" id="check-all" class="h-4 w-4">
+        <label for="check-all">Tout cocher</label>
+      </div>
+
+      <!-- pastille estimation instantanée (mise à jour par static/js/shared.js) -->
+      <span id="est-pill" class="hidden px-2 py-1 text-sm rounded bg-indigo-100 text-indigo-800">…</span>
+
+      <button type="button"
+              class="px-3 py-2 rounded bg-slate-700 text-white hover:bg-slate-800"
+              id="btn-estimate"
+              title="Estimer le coût d’un lot avec la sélection courante">
+        💡 Estimer le coût
+      </button>
+
+      <button type="submit"
+              class="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+              title="Télécharger les fichiers cochés en un ZIP (Option A)">
+        ⬇️ Télécharger la sélection (ZIP)
+      </button>
+
+      <button type="button"
+              id="btn-multi"
+              class="px-3 py-2 rounded bg-gray-700 text-white hover:bg-gray-800"
+              data-download-url="{{ url_for('main.my_download_selected_links') }}"
+              title="Télécharger chaque fichier séparément (un seul débit pour le lot)">
+        ⬇️ Télécharger en fichiers séparés
+      </button>
+
+      <a href="{{ url_for('main.my_download_all') }}"
+         class="px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+         title="Télécharger tous mes fichiers en un ZIP (Option A)">
+        ⬇️ Tout télécharger (ZIP)
+      </a>
+
+      <span id="dl-counter" class="ml-auto text-xs px-2 py-1 rounded bg-gray-200 text-gray-800 hidden"></span>
+    </div>
+
+    <!-- Liste (chargée/rafraîchie par HTMX) -->
+    <div id="files-list" class="bg-white rounded shadow p-4 text-gray-500 italic">
+      Chargement de la liste…
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <!-- paramètres pour l’estimation instantanée (réutilisés par shared.js) -->
+  <script>
+    window.APP_SESSION_FEE  = {{ session_fee|int }};
+    window.APP_PALIER_MO    = {{ palier_mo|int }};
+    window.APP_BYTES_PER_MO = 1024 * 1024;
+  </script>
+
+  <!-- JS robuste déjà utilisé par la page “Partagés” -->
+  <script src="{{ url_for('static', filename='js/shared.js') }}"></script>
+
+  <script>
+    // Initialiser la liste au chargement
+    (function(){
+      var list = document.getElementById('files-list');
+      if (!list) return;
+      // Déclenche un premier fetch
+      fetch({{ url_for('main.filter_files')|tojson }} + '?category=Tous&sort=date&dir=desc&per_page=20',
+            {headers: {'HX-Request': 'true'}})
+        .then(r => r.text()).then(html => { list.outerHTML = html; });
+
+      // Bouton “fichiers séparés” pour MES fichiers
+      var btn = document.getElementById('btn-multi');
+      if (btn) {
+        btn.addEventListener('click', function(){
+          var ids = Array.prototype.slice.call(document.querySelectorAll('#shared-list input.row-check:checked'))
+                    .map(function(cb){return cb.value});
+          if (!ids.length){ window.showToast && window.showToast('Veuillez sélectionner au moins un fichier.','warning'); return; }
+          var url = {{ url_for('main.my_download_selected_links')|tojson }};
+          var params = new URLSearchParams(); params.set('ids', ids.join(','));
+          fetch(url + '?' + params.toString(), {headers:{'Accept':'application/json'}})
+            .then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); })
+            .then(function(resObj){
+              if(resObj.status===200 && resObj.data && resObj.data.ok && Array.isArray(resObj.data.links)){
+                window.showToast && window.showToast('Lancement des téléchargements séparés…','info');
+                var i=0, links=resObj.data.links, total=links.length;
+                var badge=document.getElementById('dl-counter');
+                function upd(){ if(!badge) return; badge.textContent='Téléchargements : '+i+' / '+total; badge.classList.remove('hidden'); if(i>=total){ setTimeout(function(){ badge.classList.add('hidden'); }, 2500);} }
+                function trig(href){ var a=document.createElement('a'); a.href=href; a.target='_blank'; a.rel='noopener'; document.body.appendChild(a); a.click(); setTimeout(function(){ document.body.removeChild(a); }, 1000); }
+                function step(){ trig(links[i]); i++; upd(); if(i<total){ setTimeout(step, 600); } else { window.showToast && window.showToast('Téléchargements lancés ('+total+').','success'); } }
+                upd(); step();
+                return;
+              }
+              if(resObj.status===402 && resObj.data && resObj.data.reason==='insufficient_credits'){
+                if(confirm('Crédits insuffisants ('+(resObj.data.have||0)+' / requis '+(resObj.data.needed||'?')+'). Aller acheter des crédits ?')){
+                  window.location.href = resObj.data.buy_url || {{ url_for('stripe.buy_page')|tojson }};
+                }
+                return;
+              }
+              window.showToast && window.showToast('Impossible de lancer les téléchargements séparés.','error');
+            })
+            .catch(function(){ window.showToast && window.showToast('Erreur réseau.','error'); });
+        }, false);
+      }
+
+      // Bouton “Estimer le coût” (calculette locale via shared.js)
+      var est = document.getElementById('btn-estimate');
+      if (est) {
+        est.addEventListener('click', function(){
+          if (window._estimateSelectionCost) {
+            window._estimateSelectionCost('#shared-list input.row-check:checked', '#est-pill');
+          } else {
+            window.showToast && window.showToast('Estimation indisponible.','warning');
+          }
+        });
+      }
+    })();
+  </script>
+{% endblock %}

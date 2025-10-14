@@ -1,0 +1,58 @@
+<!-- templates/admin_logs.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Logs Admin - Secure File App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #f4f4f4;
+            padding: 2em;
+        }
+
+        h1 {
+            font-size: 1.8em;
+        }
+
+        .log-container {
+            background: #1a1a1a;
+            color: #00ff88;
+            padding: 1em;
+            border-radius: 8px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            box-shadow: 0 0 10px rgba(0,0,0,0.4);
+        }
+
+        a {
+            display: inline-block;
+            margin-bottom: 1em;
+            text-decoration: none;
+            color: #0066cc;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧾 Journaux d’activités administratives</h1>
+
+    <a href="{{ url_for('admin.dashboard') }}">← Retour au panneau admin</a>
+
+    <div class="log-container">
+        {% if logs %}
+            {% for line in logs %}
+{{ line.strip() }}
+            {% endfor %}
+        {% else %}
+            Aucune entrée de log disponible.
+        {% endif %}
+    </div>
+</body>
+</html>

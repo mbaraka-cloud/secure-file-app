@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SecureFileApp{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <meta name="htmx-config" content='{"historyCacheSize":0}'>
+
+  <style>
+    .toast { color:#fff; padding:.5rem 1rem; border-radius:.375rem; box-shadow:0 4px 10px rgba(0,0,0,.15); margin-bottom:.5rem; }
+    .toast-btn { background:rgba(255,255,255,.15); padding:.25rem .5rem; border-radius:.375rem; }
+    .toast-btn:hover { background:rgba(255,255,255,.25); }
+    .htmx-indicator { display:none; }
+    .htmx-request .htmx-indicator { display:inline-block; }
+    .btn[disabled] { opacity:.6; cursor:not-allowed; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+  {% if current_user.is_authenticated %}
+  <nav class="bg-white border-b shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="font-bold text-xl">SecureFileApp 🔐</div>
+        <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
+          Crédits : <strong id="credits-badge" class="ml-1">{{ current_user.credits or 0 }}</strong>
+        </span>
+      </div>
+
+      <div class="space-x-4 text-sm flex items-center">
+        <a href="{{ url_for('main.index') }}" class="hover:underline">Accueil</a>
+        <a href="{{ url_for('main.upload_file') }}" class="hover:underline">Upload</a>
+        <a href="{{ url_for('stripe.buy_page') }}" class="hover:underline">Acheter des crédits</a>
+        <a href="{{ url_for('stripe.history') }}" class="hover:underline">Historique</a>
+        {% if current_user.role == 'admin' %}
+          <a href="{{ url_for('admin.dashboard') }}" class="hover:underline text-blue-700">Admin</a>
+          <a href="{{ url_for('admin.audit') }}" class="hover:underline text-purple-700">Audit</a>
+        {% endif %}
+        <a href="{{ url_for('auth.profile') }}" class="hover:underline">Profil</a>
+        <a href="{{ url_for('auth.logout') }}" class="text-red-600 hover:underline">Déconnexion</a>
+      </div>
+    </div>
+  </nav>
+  {% endif %}
+
+  <!-- Conteneur toasts -->
+  <div id="toast-root" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-xl"></div>
+
+  <!-- Flash → toast -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <script>
+    (function(){
+      function showToast(msg, type){
+        var root = document.getElementById('toast-root');
+        if(!root) return;
+        var el = document.createElement('div');
+        el.className = 'toast ' + (type==='success'?'bg-green-700':type==='danger' || type==='error'?'bg-red-700':type==='warning'?'bg-yellow-600':'bg-gray-800');
+        el.textContent = msg;
+        root.appendChild(el);
+        setTimeout(function(){ el.style.opacity='0'; el.style.transition='opacity .3s'; }, 3200);
+        setTimeout(function(){ if(el.parentNode) root.removeChild(el); }, 3600);
+      }
+      {% for category, message in messages %}
+      showToast({{ message|tojson }}, {{ category|tojson }});
+      {% endfor %}
+    })();
+  </script>
+  {% endif %}
+  {% endwith %}
+
+  <div id="modal-root"></div>
+
+  <main class="p-6 max-w-6xl mx-auto">
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    // === HTMX + CSRF robuste ===
+    (function(){
+      var token = (document.querySelector('meta[name="csrf-token"]')||{}).content || '';
+      document.body.addEventListener('htmx:configRequest', function (evt) {
+        if (token) {
+          evt.detail.headers['X-CSRFToken'] = token;
+        }
+      });
+    })();
+
+    // === Toaster + confirmations + intégration HTMX (inchangé, avec petits durcissements) ===
+    (function(){
+      var root = document.getElementById('toast-root');
+
+      function showToast(msg, type){
+        if(!root) return;
+        var el = document.createElement('div');
+        el.className = 'toast ' + (type==='success'?'bg-green-700':type==='danger' || type==='error'?'bg-red-700':type==='warning'?'bg-yellow-600':'bg-gray-800');
+        el.textContent = msg || 'OK';
+        root.appendChild(el);
+        setTimeout(function(){ el.style.opacity='0'; el.style.transition='opacity .3s'; }, 1800);
+        setTimeout(function(){ if(el.parentNode) root.removeChild(el); }, 2100);
+      }
+      window.showToast = showToast;
+
+      function confirmToast(message){
+        return new Promise(function(resolve){
+          if(!root){ return resolve(confirm(message)); }
+          var el = document.createElement('div');
+          el.className = 'toast bg-gray-900 flex items-center justify-between gap-3';
+          var span = document.createElement('span'); span.textContent = message;
+          var btns = document.createElement('div'); btns.className = 'flex items-center gap-2';
+          var cancel = document.createElement('button'); cancel.type = 'button'; cancel.className = 'toast-btn'; cancel.textContent = 'Annuler';
+          var ok = document.createElement('button'); ok.type = 'button'; ok.className = 'toast-btn'; ok.textContent = 'Confirmer';
+
+          btns.appendChild(cancel); btns.appendChild(ok);
+          el.appendChild(span); el.appendChild(btns);
+          root.appendChild(el);
+
+          function cleanup(res){
+            el.style.opacity='0'; el.style.transition='opacity .2s';
+            setTimeout(function(){ if(el.parentNode) root.removeChild(el); resolve(res); }, 200);
+          }
+          cancel.addEventListener('click', function(){ cleanup(false); });
+          ok.addEventListener('click', function(){ cleanup(true); });
+        });
+      }
+
+      document.addEventListener('submit', function(e){
+        var form = e.target;
+        if(!(form instanceof HTMLFormElement)) return;
+        var msg = form.getAttribute('data-confirm') || form.getAttribute('hx-confirm');
+        if(!msg) return;
+        e.preventDefault();
+        confirmToast(msg).then(function(ok){
+          if(ok){
+            Array.prototype.forEach.call(form.querySelectorAll('button, [type="submit"]'), function(b){ b.disabled = true; });
+            form.submit();
+          }
+        });
+      }, true);
+
+      function shouldForceReload(req, xhr){
+        if(!req) return false;
+        var url = req.path || req.url || '';
+        var method = (req.verb || req.method || '').toUpperCase();
+        var hdrRefresh = xhr && xhr.getResponseHeader && xhr.getResponseHeader('HX-Refresh');
+        var hdrRedirect = xhr && xhr.getResponseHeader && xhr.getResponseHeader('HX-Redirect');
+        var status = xhr && xhr.status;
+
+        if (hdrRedirect || (hdrRefresh && hdrRefresh !== 'false')) return true;
+        if (method === 'POST' && /\/admin\/users\/\d+\/delete$/.test(url)) return true;
+        if (status === 204) return true;
+        return false;
+      }
+
+      document.body.addEventListener('htmx:afterOnLoad', function (e) {
+        try {
+          var xhr = e.detail.xhr;
+          var trig = xhr && xhr.getResponseHeader && xhr.getResponseHeader('HX-Trigger');
+          if (!trig) return;
+          var data = JSON.parse(trig);
+          if (data.toast) window.showToast(data.toast.message, data.toast.variant || 'success');
+        } catch (_) {}
+      });
+
+      document.body.addEventListener('htmx:afterRequest', function (e) {
+        try {
+          var xhr = e.detail.xhr;
+          var req = e.detail.requestConfig || {};
+          var trig = xhr && xhr.getResponseHeader && xhr.getResponseHeader('HX-Trigger');
+          if (trig) {
+            try {
+              var data = JSON.parse(trig);
+              if (data.toast) window.showToast(data.toast.message, data.toast.variant || 'success');
+            } catch(_) {}
+          }
+          if (shouldForceReload(req, xhr)) {
+            setTimeout(function(){ window.location.reload(); }, 250);
+          }
+        } catch (_) {}
+      });
+    })();
+  </script>
+
+  {% block scripts %}{% endblock %}
+  <script>
+    // Ferme la modale si un overlay custom resterait (fallback)
+    document.addEventListener('modal:close', function () {
+      var m = document.getElementById('modal-root');
+      if (m) m.innerHTML = '';
+      document.body.classList.remove('overflow-hidden'); // au cas où tu utilises ce lock scroll
+    });
+  </script>
+  <!-- Conteneur OOB pour lancer les téléchargements sans navigation -->
+<div id="download-iframe"></div>
+
+<script>
+  // Fermer proprement la modale si un overlay custom existe encore
+  document.addEventListener('modal:close', function () {
+    var m = document.getElementById('modal-root');
+    if (m) m.innerHTML = '';
+    document.body.classList.remove('overflow-hidden'); // au cas où tu lockes le scroll
+  });
+
+  // Rafraîchir automatiquement après confirmation/annulation
+  document.addEventListener('page:refresh', function () {
+    // Laisse 800–1200ms au navigateur pour démarrer le téléchargement
+    setTimeout(function () {
+      // on peut faire un refresh partiel si tu préfères :
+      // htmx.ajax('GET', '/me/credits/fragment', {target:'#credits-badge', swap:'outerHTML'});
+      // mais le user veut une vraie actualisation :
+      location.reload();
+    }, 1000);
+  });
+</script>
+
+</body>
+</html>

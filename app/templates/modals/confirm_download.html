@@ -1,0 +1,60 @@
+<!-- app/templates/modals/confirm_download.html -->
+<div class="fixed inset-0 z-50 flex items-center justify-center">
+  <!-- backdrop -->
+  <div class="absolute inset-0 bg-black/40" data-close-modal></div>
+
+  <!-- modal card -->
+  <div class="relative z-10 w-full max-w-md bg-white rounded shadow-lg p-4">
+    <h3 class="text-lg font-semibold mb-2">Confirmer le téléchargement</h3>
+
+    <div class="text-sm text-gray-700 space-y-1 mb-3">
+      <div><span class="font-medium">Fichier :</span> {{ file.filename }}</div>
+      <div>
+        <span class="font-medium">Crédits débités :</span>
+        {{ needed_credits }} crédit{{ '' if needed_credits == 1 else 's' }}
+        <span class="text-xs text-gray-500">(taille ~{{ (total_bytes/1024/1024)|round(2) }} Mo)</span>
+      </div>
+    </div>
+
+    <form
+      method="post"
+      hx-post="{{ url_for('main.perform_download_after_confirm', file_id=file.id) }}"
+      hx-target="#modal-root"
+      hx-swap="outerHTML"
+      class="mt-4 flex items-center justify-end gap-2"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <!-- CONFIRMER -->
+        <button
+        class="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+        hx-post="{{ url_for('main.perform_download_after_confirm', file_id=file.id) }}"
+        hx-target="#modal-root"
+        hx-swap="none">
+        Confirmer le téléchargement ({{ needed_credits }} crédit{{ 's' if needed_credits>1 else '' }})
+        </button>
+
+        <!-- ANNULER -->
+        <button
+        class="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
+        hx-post="{{ url_for('main.modal_close_refresh') }}"
+        hx-target="#modal-root"
+        hx-swap="none">
+        Annuler
+        </button>
+
+    </form>
+  </div>
+</div>
+
+<script>
+  // Fermer le modal (clic sur backdrop ou bouton Annuler)
+  (function(){
+    var root = document.getElementById('modal-root');
+    if(!root) return;
+    root.querySelectorAll('[data-close-modal]').forEach(function(el){
+      el.addEventListener('click', function(){
+        root.innerHTML = '';
+      }, {once:false});
+    });
+  })();
+</script>

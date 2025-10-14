@@ -1,0 +1,24 @@
+<div id="flash-messages" hx-swap-oob="true">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div 
+            x-data="{ showFlash: true }" 
+            x-show="showFlash" 
+            x-transition 
+            x-init="setTimeout(() => showFlash = false, 4000)" 
+            @flash-done.window="showFlash = false"
+            class="space-y-2"
+        >
+            {% for category, message in messages %}
+                <div class="px-4 py-3 rounded shadow-md text-sm font-medium
+                    {{ 'bg-green-500 text-white' if category == 'success' else
+                       'bg-blue-500 text-white' if category == 'info' else
+                       'bg-yellow-300 text-black' if category == 'warning' else
+                       'bg-red-500 text-white' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+</div>

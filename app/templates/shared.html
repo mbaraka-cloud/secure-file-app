@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Fichiers partagés avec moi{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-semibold">📥 Fichiers partagés avec moi</h1>
+    <div class="text-sm">
+      Crédits disponibles :
+      <span class="font-bold">{{ my_credits }}</span>
+      <a href="{{ url_for('stripe.buy_page') }}"
+         class="ml-3 px-3 py-1 rounded bg-amber-500 text-white hover:bg-amber-600">Acheter des crédits</a>
+    </div>
+  </div>
+
+  <div class="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded text-sm text-indigo-900">
+    <div class="font-semibold mb-1">Facturation Option A (prix par lot)</div>
+    <ul class="list-disc list-inside">
+      <li>Coût = <code>{{ session_fee }}</code> crédit de session + <code>1</code> crédit par tranche de <code>{{ palier_mo }}</code> Mo du lot sélectionné.</li>
+      <li>Exemples : 500 Mo → 2 crédits (1 + 1) ; 3 Go → 7 crédits (1 + floor(3000/500)=1+6).</li>
+      <li>Le débit s’applique <strong>une seule fois</strong> pour le lot (sélection ZIP ou “fichiers séparés”).</li>
+    </ul>
+  </div>
+
+  {% if cats_with_counts %}
+  <div class="flex flex-wrap gap-2 mb-3">
+    {% for cat, n in cats_with_counts %}
+      <a href="{{ url_for('main.shared_list', category=cat, q=q, sort=sort, dir=direction) }}"
+         class="px-3 py-1 rounded border {{ 'bg-gray-200' if (selected_category or 'Tous') == cat else 'bg-white' }}">
+        {{ cat }} ({{ n }})
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="get" action="{{ url_for('main.shared_list') }}" class="mb-4 flex gap-3">
+    <div class="relative flex-1">
+      <input type="text" name="q" id="q" value="{{ q or '' }}"
+             class="w-full px-3 py-2 border rounded"
+             placeholder="Rechercher par nom…"
+             autocomplete="off"
+             hx-get="{{ url_for('main.shared_suggest') }}"
+             hx-trigger="keyup changed delay:300ms"
+             hx-target="#suggestions" hx-swap="outerHTML">
+      <div id="suggestions"></div>
+    </div>
+    <input type="hidden" name="category" value="{{ selected_category or 'Tous' }}">
+    <input type="hidden" name="sort" value="{{ sort or 'date' }}">
+    <input type="hidden" name="dir" value="{{ direction or 'desc' }}">
+    <button type="submit" class="px-4 py-2 border rounded bg-gray-700 text-white hover:bg-gray-800">Rechercher</button>
+  </form>
+
+  {% if files|length == 0 %}
+    <div class="p-4 rounded bg-yellow-50 text-yellow-800">Aucun fichier partagé ne vous a été attribué.</div>
+  {% else %}
+
+  <form id="shared-form" method="get" action="{{ url_for('main.shared_download_selected') }}" class="space-y-3">
+    <div class="flex flex-wrap items-center gap-3 mb-3">
+      <div class="inline-flex items-center gap-2 select-none">
+        <input type="checkbox" id="check-all" class="h-4 w-4">
+        <label for="check-all">Tout cocher</label>
+      </div>
+
+      <button type="submit"
+              formaction="{{ url_for('main.shared_estimate') }}"
+              formmethod="get"
+              class="px-3 py-2 rounded bg-gray-700 text-white hover:bg-gray-800"
+              title="Estimer le coût de la sélection (aucun débit)">
+        💡 Estimer le coût
+      </button>
+
+      <span id="est-pill" class="hidden px-2 py-1 text-sm rounded bg-indigo-100 text-indigo-800">…</span>
+
+      <button type="submit"
+              class="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+              title="Télécharger les fichiers cochés en un ZIP (Option A)">
+        ⬇️ Télécharger la sélection (ZIP)
+      </button>
+
+      <button type="button"
+              id="btn-multi"
+              class="px-3 py-2 rounded bg-gray-600 text-white hover:bg-gray-700"
+              title="Télécharger chaque fichier séparément (Option A, un seul débit)">
+        ⬇️ Télécharger en fichiers séparés
+      </button>
+
+      <a href="{{ url_for('main.shared_download_all') }}"
+         class="px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+         title="Télécharger tous les fichiers partagés en un ZIP (Option A)">
+        ⬇️ Tout télécharger (ZIP)
+      </a>
+
+      <span id="dl-counter" class="ml-auto text-xs px-2 py-1 rounded bg-gray-200 text-gray-800 hidden"></span>
+    </div>
+
+    <div class="bg-white rounded shadow divide-y" id="shared-list">
+      {% for f in files %}
+        <div class="p-3 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <input type="checkbox"
+                   name="ids"
+                   value="{{ f.id }}"
+                   class="row-check h-4 w-4"
+                   data-bytes="{{ (f.ciphertext|length) or 0 }}">
+            <div>
+              <div class="font-medium">{{ f.filename }}</div>
+              <div class="text-xs text-gray-500">
+                ID: {{ f.id }} — Type: {{ f.content_type or 'inconnu' }} — Catégorie: {{ f.category }}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+                class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+                hx-get="{{ url_for('main.shared_confirm_download_modal', file_id=f.id) }}"
+                hx-target="#modal-root"
+                hx-swap="innerHTML">
+                Télécharger
+            </button>
+
+
+            <form method="post"
+                  action="{{ url_for('main.shared_unshare', file_id=f.id) }}"
+                  data-confirm="Retirer ce fichier de vos partages ?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700">
+                Supprimer
+              </button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </form>
+
+  <p class="mt-3 text-xs text-gray-500">
+    💡 Astuce : pour bénéficier de la facturation “au poids” (Option A), utilisez <em>Télécharger la sélection</em> (ZIP ou séparés)
+    ou <em>Tout télécharger</em>. Le bouton “Télécharger (unitaire)” est également débité comme un lot d’un seul fichier.
+  </p>
+
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    window.APP_SESSION_FEE = {{ session_fee|int }};
+    window.APP_PALIER_MO   = {{ palier_mo|int }};
+    window.APP_BYTES_PER_MO = 1024 * 1024;
+  </script>
+  <script src="{{ url_for('static', filename='js/shared.js') }}"></script>
+{% endblock %}

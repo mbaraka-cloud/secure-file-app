@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-md mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-4">Créer l’administrateur</h1>
+
+  <div class="mb-4 p-3 rounded border text-sm text-gray-700">
+    <p>Cette page n’est accessible que si :</p>
+    <ul class="list-disc ml-6">
+      <li>Aucun admin n’existe encore</li>
+      <li>Vous fournissez le <strong>token</strong> de bootstrap</li>
+    </ul>
+  </div>
+
+  <form method="POST" action="{{ url_for('setup.first_admin', token=token) }}" class="space-y-3">
+    <input type="hidden" name="token" value="{{ token }}"/>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Email</label>
+      <input name="email" type="email" required class="w-full border rounded px-3 py-2">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Nom d’utilisateur (optionnel)</label>
+      <input name="username" type="text" class="w-full border rounded px-3 py-2" placeholder="admin (par défaut)">
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">Mot de passe</label>
+      <input name="password" type="password" required class="w-full border rounded px-3 py-2">
+    </div>
+
+    <button class="mt-2 px-4 py-2 rounded bg-blue-600 text-white">Créer l’admin</button>
+  </form>
+
+  <p class="text-xs text-gray-500 mt-4">
+    Après création, supprimez le token (ou cette route) pour plus de sécurité.
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Audit • SecureFileApp{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-xl font-semibold">Audit &amp; Historique</h1>
+  <a href="{{ url_for('admin.dashboard') }}" class="text-blue-600 hover:underline">⟵ Retour Admin</a>
+</div>
+
+<form class="bg-white rounded shadow p-4 mb-4 grid md:grid-cols-5 gap-3" method="get" action="{{ url_for('admin.audit') }}">
+  <div>
+    <label class="block text-xs text-gray-500 mb-1">Recherche (email/username)</label>
+    <input type="text" name="q" value="{{ q }}" class="w-full border rounded px-2 py-1">
+  </div>
+  <div>
+    <label class="block text-xs text-gray-500 mb-1">Type</label>
+    <select name="kind" class="w-full border rounded px-2 py-1">
+      <option value="all"      {{ 'selected' if kind=='all' else '' }}>Tous</option>
+      <option value="billing"  {{ 'selected' if kind=='billing' else '' }}>Débits (BillingEvent)</option>
+      <option value="usage"    {{ 'selected' if kind=='usage' else '' }}>Usage (CreditUsage)</option>
+      <option value="purchase" {{ 'selected' if kind=='purchase' else '' }}>Achats (Purchase)</option>
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs text-gray-500 mb-1">Du (YYYY-MM-DD)</label>
+    <input type="text" name="date_from" value="{{ date_from }}" class="w-full border rounded px-2 py-1" placeholder="2025-01-01">
+  </div>
+  <div>
+    <label class="block text-xs text-gray-500 mb-1">Au (YYYY-MM-DD)</label>
+    <input type="text" name="date_to" value="{{ date_to }}" class="w-full border rounded px-2 py-1" placeholder="2025-12-31">
+  </div>
+  <div class="flex items-end">
+    <button class="px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Filtrer</button>
+  </div>
+</form>
+
+<div class="bg-white rounded shadow overflow-x-auto">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50">
+      <tr>
+        <th class="px-3 py-2 text-left">Date</th>
+        <th class="px-3 py-2 text-left">Source</th>
+        <th class="px-3 py-2 text-left">Utilisateur</th>
+        <th class="px-3 py-2 text-left">Kind</th>
+        <th class="px-3 py-2 text-left">Montant</th>
+        <th class="px-3 py-2 text-left">Meta</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for r in rows %}
+      <tr>
+        <td class="px-3 py-2">{{ r.created_at or '' }}</td>
+        <td class="px-3 py-2">
+          {% if r.source == 'billing' %}<span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 text-xs">BillingEvent</span>
+          {% elif r.source == 'usage' %}<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-700 text-xs">CreditUsage</span>
+          {% else %}<span class="px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs">Purchase</span>
+          {% endif %}
+        </td>
+        <td class="px-3 py-2">
+          <div class="font-medium">{{ r.username }}</div>
+          <div class="text-gray-500 text-xs">{{ r.email }}</div>
+        </td>
+        <td class="px-3 py-2">{{ r.kind }}</td>
+        <td class="px-3 py-2">{{ r.amount }}</td>
+        <td class="px-3 py-2"><code class="text-xs break-all">{{ r.meta|default('', true) }}</code></td>
+      </tr>
+      {% else %}
+      <tr><td class="px-3 py-6 text-center text-gray-500" colspan="6">Aucun résultat.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="flex items-center justify-center gap-1 mt-4">
+  {% set prev = page-1 if page>1 else 1 %}
+  {% set next = page+1 if page<total_pages else total_pages %}
+  <a class="px-2 py-1 border rounded"
+     href="{{ url_for('admin.audit', q=q, kind=kind, date_from=date_from, date_to=date_to, page=1, per_page=per_page) }}">«</a>
+  <a class="px-2 py-1 border rounded"
+     href="{{ url_for('admin.audit', q=q, kind=kind, date_from=date_from, date_to=date_to, page=prev, per_page=per_page) }}">‹</a>
+  <span class="px-2 py-1 border rounded bg-gray-100">{{ page }}/{{ total_pages }} — {{ total }} lignes</span>
+  <a class="px-2 py-1 border rounded"
+     href="{{ url_for('admin.audit', q=q, kind=kind, date_from=date_from, date_to=date_to, page=next, per_page=per_page) }}">›</a>
+  <a class="px-2 py-1 border rounded"
+     href="{{ url_for('admin.audit', q=q, kind=kind, date_from=date_from, date_to=date_to, page=total_pages, per_page=per_page) }}">»</a>
+</div>
+{% endif %}
+{% endblock %}

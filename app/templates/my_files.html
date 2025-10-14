@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Mes fichiers • SecureFileApp{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-4">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold">Mes fichiers</h1>
+    <a href="{{ url_for('main.upload_file') }}" class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700">
+      ➕ Upload
+    </a>
+  </div>
+
+  {% if files|length == 0 %}
+    <div class="p-4 rounded bg-yellow-50 text-yellow-800">Vous n’avez pas encore de fichiers.</div>
+  {% else %}
+  <!-- Soumission GET vers /my/download/selected (les ids sont récupérés via la query-string) -->
+  <form id="my-files-form" class="space-y-3" method="get" action="{{ url_for('main.my_download_selected') }}">
+    <div class="flex flex-wrap items-center gap-3 mb-1">
+      <div class="inline-flex items-center gap-2 select-none">
+        <input type="checkbox" id="check-all" class="h-4 w-4">
+        <label for="check-all">Tout cocher</label>
+      </div>
+
+      <button type="submit"
+              class="px-3 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+              title="Télécharger les fichiers cochés en un ZIP (Option A)">
+        ⬇️ Télécharger la sélection (ZIP)
+      </button>
+
+      <!-- Lien direct “tout télécharger” (ZIP) -->
+      <a href="{{ url_for('main.my_download_all') }}"
+         class="px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+         title="Télécharger tous mes fichiers en un ZIP (Option A)">
+        ⬇️ Tout télécharger (ZIP)
+      </a>
+
+      <!-- Bouton “fichiers séparés” (ouvre des liens signés) -->
+      <button type="button"
+              id="btn-multi"
+              class="px-3 py-2 rounded bg-gray-700 text-white hover:bg-gray-800"
+              title="Télécharger chaque fichier séparément (Option A, un seul débit)">
+        ⬇️ Télécharger en fichiers séparés
+      </button>
+
+      <span id="dl-counter" class="ml-auto text-xs px-2 py-1 rounded bg-gray-200 text-gray-800 hidden"></span>
+    </div>
+
+    <div class="bg-white rounded shadow divide-y" id="my-list">
+      {% for f in files %}
+        <div class="p-3 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <input type="checkbox"
+                   class="row-check h-4 w-4"
+                   name="ids"
+                   value="{{ f.id }}">
+            <div>
+              <div class="font-medium">{{ f.filename }}</div>
+              <div class="text-xs text-gray-500">
+                ID: {{ f.id }} — Type: {{ f.content_type or 'inconnu' }} — Catégorie: {{ f.category }}
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <!-- Téléchargement unitaire via modal de confirmation (si tu utilises la route de modal) -->
+            <button
+              class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+              hx-get="{{ url_for('main.confirm_download_modal', file_id=f.id) }}"
+              hx-target="#modal-root"
+              hx-swap="innerHTML">
+              Télécharger (unitaire)
+            </button>
+
+            <form method="post"
+                  action="{{ url_for('main.delete_file', file_id=f.id) }}"
+                  data-confirm="Supprimer {{ f.filename }} ?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700">🗑️ Supprimer</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Tout cocher / décocher
+  (function(){
+    var all = document.getElementById('check-all');
+    var list = document.getElementById('my-list');
+    if(all && list){
+      all.addEventListener('change', function(){
+        list.querySelectorAll('input.row-check').forEach(function(cb){ cb.checked = all.checked; });
+      });
+    }
+  })();
+
+  // Téléchargements séparés (via endpoint /my/download/selected/links)
+  (function(){
+    var btn = document.getElementById('btn-multi');
+    if(!btn) return;
+
+    btn.addEventListener('click', function(){
+      var ids = Array.prototype.slice.call(document.querySelectorAll('#my-list input.row-check:checked'))
+                .map(function(cb){ return cb.value; });
+      if (!ids.length){
+        window.showToast && window.showToast('Veuillez sélectionner au moins un fichier.','warning');
+        return;
+      }
+      var url = {{ url_for('main.my_download_selected_links')|tojson }};
+      var params = new URLSearchParams(); params.set('ids', ids.join(','));
+
+      fetch(url + '?' + params.toString(), {headers:{'Accept':'application/json'}})
+        .then(function(r){ return r.json().then(function(d){ return {status:r.status, data:d}; }); })
+        .then(function(resObj){
+          if(resObj.status===200 && resObj.data && resObj.data.ok && Array.isArray(resObj.data.links)){
+            var i=0, links=resObj.data.links, total=links.length;
+            var badge=document.getElementById('dl-counter');
+            function upd(){
+              if(!badge) return;
+              badge.textContent='Téléchargements : '+i+' / '+total;
+              badge.classList.remove('hidden');
+              if(i>=total){ setTimeout(function(){ badge.classList.add('hidden'); }, 2500); }
+            }
+            function trig(href){
+              var a=document.createElement('a');
+              a.href=href; a.target='_blank'; a.rel='noopener';
+              document.body.appendChild(a); a.click();
+              setTimeout(function(){ document.body.removeChild(a); }, 800);
+            }
+            function step(){
+              trig(links[i]); i++; upd();
+              if(i<total){ setTimeout(step, 600); }
+              else { window.showToast && window.showToast('Téléchargements lancés ('+total+').','success'); }
+            }
+            upd(); step();
+            return;
+          }
+          if(resObj.status===402 && resObj.data && resObj.data.reason==='insufficient_credits'){
+            if(confirm('Crédits insuffisants ('+(resObj.data.have||0)+' / requis '+(resObj.data.needed||'?')+'). Aller acheter des crédits ?')){
+              window.location.href = resObj.data.buy_url || {{ url_for('stripe.buy_page')|tojson }};
+            }
+            return;
+          }
+          window.showToast && window.showToast('Impossible de lancer les téléchargements séparés.','error');
+        })
+        .catch(function(){ window.showToast && window.showToast('Erreur réseau.','error'); });
+    }, false);
+  })();
+</script>
+{% endblock %}

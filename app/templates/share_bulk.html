@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Partager des fichiers{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">🤝 Partager plusieurs fichiers</h1>
+
+<!-- IMPORTANT : id = share-bulk-form (utilisé par le JS pour injecter TOUTES les sélections) -->
+<form method="post" class="space-y-6" id="share-bulk-form" action="{{ url_for('main.share_bulk') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+  <div class="bg-white shadow rounded p-4 space-y-3">
+    <label class="block text-sm font-medium">Email du destinataire</label>
+    <input type="email" name="email" required placeholder="ex: user@example.com"
+           class="w-full md:w-1/2 border rounded px-3 py-2 focus:outline-none focus:ring" />
+    <p class="text-xs text-gray-500">Saisissez l’email de l’utilisateur avec qui partager.</p>
+  </div>
+
+  <div class="bg-white shadow rounded p-4">
+    <div class="mb-3">
+      <div class="mb-2 font-semibold">Fichiers à partager</div>
+
+      <div id="bulk-controls" class="mb-3">
+        <input id="q2" type="search" name="q" placeholder="Rechercher par nom…"
+               class="w-full md:w-1/2 border rounded px-3 py-2 focus:outline-none focus:ring"
+               autocomplete="off"
+               hx-get="{{ url_for('main.share_bulk_files') }}"
+               hx-include="#bulk-controls"
+               hx-target="#share-file-list"
+               hx-swap="outerHTML"
+               hx-trigger="input changed delay:300ms" />
+
+        <input type="hidden" name="category" id="bulk-active-category" value="Tous" />
+        <input type="hidden" name="sort" value="date" />
+        <input type="hidden" name="dir" value="desc" />
+        <input type="hidden" name="page" value="1" />
+        <input type="hidden" name="per_page" value="10" />
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          {% for cat, n in cats_with_counts %}
+          <button
+            type="button"
+            class="px-3 py-1 rounded border bg-white hover:bg-gray-100"
+            data-bulk-cat-btn
+            data-category="{{ cat }}"
+            hx-get="{{ url_for('main.share_bulk_files') }}?category={{ cat }}"
+            hx-include="#bulk-controls"
+            hx-target="#share-file-list"
+            hx-swap="outerHTML">
+            {{ cat }}{% if n is not none %} ({{ n }}){% endif %}
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div id="share-file-list" class="bg-gray-50 border rounded p-3 text-gray-500 italic">
+        Choisissez une catégorie ou utilisez la recherche.
+      </div>
+      <p class="text-xs text-gray-500 mt-2">Cochez un ou plusieurs fichiers, puis cliquez sur “Partager”.</p>
+    </div>
+  </div>
+
+  <div class="flex gap-3">
+    <button class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Partager</button>
+    <a href="{{ url_for('main.index') }}" class="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300">Annuler et revenir à l’accueil</a>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+  <!-- Sélection persistante pour /share/bulk -->
+  <script src="{{ url_for('static', filename='js/share_bulk_select.js') }}"></script>
+{% endblock %}

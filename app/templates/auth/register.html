@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr" x-data="{ showFlash: true }" @flash-done.window="showFlash = false">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription - Secure File App</title>
+    <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+    <script src="https://unpkg.com/alpinejs" defer></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+    <form method="POST" class="bg-white p-6 rounded-xl shadow-md w-full max-w-sm space-y-4">
+        {{ form.hidden_tag() }}
+        <h2 class="text-2xl font-bold text-center">📝 Créer un compte</h2>
+
+        {% include 'partials/flash_messages.html' %}
+
+        <!-- Champs existants WTForms -->
+        {{ form.username(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400", placeholder="Nom d'utilisateur") }}
+        {{ form.email(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400", placeholder="Adresse email") }}
+        {{ form.password(class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400", placeholder="Mot de passe") }}
+
+        <!-- Champs additionnels (optionnels, non bloquants) -->
+        <div class="grid grid-cols-1 gap-3">
+          <input name="first_name" type="text" placeholder="Prénom (optionnel)"
+                 class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <input name="last_name" type="text" placeholder="Nom (optionnel)"
+                 class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+          <input name="phone" type="tel" placeholder="Téléphone (optionnel)"
+                 class="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400">
+        </div>
+
+        <!-- Consentement Privacy obligatoire -->
+        <label class="flex items-start gap-2 text-sm text-gray-700">
+          <input type="checkbox" name="privacy_accept" required class="mt-1 h-4 w-4">
+          <span>
+            J’accepte la
+            <a href="/legal/privacy" target="_blank" class="text-blue-600 hover:underline">Politique de confidentialité</a>.
+          </span>
+        </label>
+
+        {{ form.submit(class="w-full bg-green-500 hover:bg-green-600 text-white p-2 rounded font-semibold transition") }}
+
+        <p class="text-sm text-center">
+            Déjà inscrit ?
+            <a href="{{ url_for('auth.login') }}" class="text-blue-600 hover:underline">Se connecter</a>
+        </p>
+    </form>
+</body>
+</html>

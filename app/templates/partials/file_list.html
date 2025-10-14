@@ -1,0 +1,42 @@
+<!-- app/templates/partials/file_list.html -->
+{% if files and files|length %}
+  <div class="overflow-x-auto bg-white rounded shadow">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 border-b">
+        <tr>
+          <th class="px-3 py-2 w-12">
+            <input id="check-all" type="checkbox" class="align-middle">
+          </th>
+          <th class="text-left px-4 py-2">Nom</th>
+          <th class="text-left px-4 py-2">Type MIME</th>
+          <th class="text-left px-4 py-2">Catégorie</th>
+        </tr>
+      </thead>
+      <tbody id="shared-list">
+        {% for f in files %}
+        <tr class="border-b hover:bg-gray-50" data-category="{{ f.category }}">
+          <td class="px-3 py-2">
+            <input
+              type="checkbox"
+              class="row-check align-middle"
+              name="file_ids"
+              value="{{ f.id }}"
+              data-bytes="{{ f.size or 0 }}">
+          </td>
+          <td class="px-4 py-2">{{ f.filename }}</td>
+          <td class="px-4 py-2">{{ f.content_type }}</td>
+          <td class="px-4 py-2">{{ f.category }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Petit bandeau récap de sélection (mis à jour en live) -->
+  <div class="mt-2">
+    <span id="est-pill" class="hidden inline-block text-xs px-2 py-1 rounded bg-gray-100 text-gray-700"></span>
+    <span id="dl-counter" class="hidden text-xs text-gray-600 ml-2"></span>
+  </div>
+{% else %}
+  <p class="text-gray-500">Aucun fichier dans cette catégorie.</p>
+{% endif %}

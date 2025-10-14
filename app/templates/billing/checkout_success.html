@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-xl mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-4">Paiement réussi ✅</h1>
+  <p class="mb-4">Merci ! Vos crédits ont été ajoutés (via le webhook). Si le solde n’apparaît pas tout de suite, revenez dans quelques secondes.</p>
+  <a href="{{ url_for('billing.wallet_view') }}" class="px-4 py-2 rounded bg-blue-600 text-white">Voir mon portefeuille</a>
+</div>
+{% endblock %}

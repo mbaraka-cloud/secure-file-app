@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold">Administration — Utilisateurs</h1>
+    <a href="{{ url_for('admin.audit') }}" class="px-3 py-1 rounded border bg-gray-100 hover:bg-gray-200 text-sm">Audit crédits</a>
+  </div>
+
+  <!-- Création utilisateur (HTMX) -->
+  <div class="bg-white shadow rounded p-4">
+    <form
+      id="create-user-form"
+      hx-post="{{ url_for('admin.create_user') }}"
+      hx-target="#users-table-body"
+      hx-swap="afterbegin"
+      class="grid gap-3 md:grid-cols-5"
+      hx-push-url="false"
+    >
+      <input type="text" name="username" placeholder="Nom d’utilisateur" class="border rounded px-3 py-2 md:col-span-1" required>
+      <input type="email" name="email" placeholder="Email" class="border rounded px-3 py-2 md:col-span-2" required>
+      <input type="password" name="password" placeholder="Mot de passe" class="border rounded px-3 py-2 md:col-span-1" required>
+      <label class="inline-flex items-center md:col-span-1">
+        <input type="checkbox" name="is_admin" class="mr-2"> Admin
+      </label>
+      <div class="md:col-span-5">
+        <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+          + Créer
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-white shadow rounded">
+    <table class="min-w-full divide-y">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">ID</th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Utilisateur</th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Email</th>
+          <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Rôle</th>
+          <th class="px-4 py-2 text-right text-sm font-medium text-gray-600">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="users-table-body" class="divide-y">
+        {% for u in users %}
+          {% set u_is_admin = (u.is_admin() if (u.is_admin is callable) else u.is_admin) or (u.role|default('', true) == 'admin') %}
+          {% include "partials/admin_user_row.html" %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  // Toast minimal
+  function showToast(msg, variant) {
+    const t = document.createElement('div');
+    t.textContent = msg || 'OK';
+    t.className = 'fixed bottom-4 right-4 z-50 px-4 py-2 rounded text-white shadow';
+    t.style.background = (variant === 'danger') ? '#dc2626'
+                     : (variant === 'info') ? '#2563eb'
+                     : '#16a34a';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2200);
+  }
+
+  function handleTriggerFrom(xhr) {
+    const trig = xhr.getResponseHeader && xhr.getResponseHeader('HX-Trigger');
+    if (!trig) return;
+    try {
+      const data = JSON.parse(trig);
+      if (data.toast) showToast(data.toast.message, data.toast.variant);
+      if (data.removeRow && data.removeRow.id) {
+        const row = document.getElementById(data.removeRow.id);
+        if (row) row.remove();
+      }
+    } catch (e) {}
+  }
+
+  document.body.addEventListener('htmx:afterOnLoad', function (evt) {
+    handleTriggerFrom(evt.detail.xhr);
+  });
+  document.body.addEventListener('htmx:responseError', function (evt) {
+    handleTriggerFrom(evt.detail.xhr);
+  });
+</script>
+{% endblock %}

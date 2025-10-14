@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Politique de confidentialité — SecureFileApp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <main class="max-w-3xl mx-auto p-6 my-8 bg-white rounded-xl shadow">
+    <h1 class="text-3xl font-bold mb-4">Politique de confidentialité</h1>
+    <p class="text-sm text-gray-600 mb-6">
+      Dernière mise à jour : {{ current_app.config.get('PRIVACY_LAST_UPDATE', '2025-01-01') }}
+    </p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">1. Responsable du traitement</h2>
+    <p>SecureFileApp (ci-après « nous ») est responsable du traitement des données à caractère personnel
+       collectées via l’application.</p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">2. Données collectées</h2>
+    <ul class="list-disc pl-6 space-y-1">
+      <li>Informations de compte : nom d’utilisateur, adresse email, mot de passe (haché).</li>
+      <li>Données de sécurité : 2FA (secret TOTP chiffré/stocké), tentatives de connexion, bannissements temporaires.</li>
+      <li>Fichiers chiffrés : contenus chiffrés, métadonnées techniques (type MIME, taille, dates).</li>
+      <li>Journaux : événements d’administration, facturation (crédits), téléchargements, partages.</li>
+    </ul>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">3. Finalités</h2>
+    <p>Fournir le service d’hébergement chiffré, gérer les accès et partages, sécuriser les comptes,
+       assurer la facturation et le support.</p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">4. Base légale</h2>
+    <p>Exécution du contrat (CGU), intérêt légitime (sécurité, prévention des abus) et obligation légale
+       le cas échéant.</p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">5. Conservation</h2>
+    <p>Les données sont conservées pendant la durée du compte et selon les obligations légales/applicables.
+       Les fichiers sont stockés chiffrés.</p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">6. Partage / Sous-traitants</h2>
+    <p>Des prestataires (hébergement, email) peuvent intervenir pour le fonctionnement du service,
+       sur la base d’accords conformes au RGPD.</p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">7. Droits des personnes</h2>
+    <p>Conformément à la réglementation, vous disposez d’un droit d’accès, de rectification, d’effacement,
+       de limitation, d’opposition et de portabilité. Contact : {{ current_app.config.get('PRIVACY_CONTACT', 'support@securefileapp.local') }}.</p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">8. Sécurité</h2>
+    <p>Chiffrement des fichiers côté serveur, hachage des mots de passe, 2FA optionnelle, limitation
+       des tentatives de connexion, liens de téléchargement à usage unique et expiration.</p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">9. Cookies</h2>
+    <p>Cookies strictement nécessaires à l’authentification et au maintien de session.</p>
+
+    <h2 class="text-xl font-semibold mt-6 mb-2">10. Contact</h2>
+    <p>Pour toute question, contactez : {{ current_app.config.get('PRIVACY_CONTACT', 'support@securefileapp.local') }}.</p>
+
+    <hr class="my-6">
+    <p class="text-sm text-gray-600">© {{ current_app.config.get('BRAND_NAME', 'SecureFileApp') }}</p>
+  </main>
+</body>
+</html>

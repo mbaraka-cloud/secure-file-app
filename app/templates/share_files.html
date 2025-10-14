@@ -1,0 +1,64 @@
+<!-- templates/share_files.html -->
+{% extends "base.html" %}
+
+{% block content %}
+  <h2 class="text-xl font-semibold mb-4">Partager vos fichiers</h2>
+
+  <form method="POST" action="{{ url_for('main.share_file') }}" class="space-y-4">
+    {{ form.hidden_tag() }}
+
+    <div>
+      <label for="email" class="block text-sm text-gray-600 mb-1">
+        Email de l'utilisateur à qui partager les fichiers :
+      </label>
+      {{ form.email(class="border rounded px-3 py-2 w-full") }}
+    </div>
+
+    <!-- Panneau résumé sélection (utilisé par shared.js) -->
+    <div id="est-pill" class="hidden inline-block text-xs px-2 py-1 rounded bg-gray-100 text-gray-700"></div>
+
+    <!-- Liste des fichiers à cocher -->
+    <div class="overflow-x-auto bg-white rounded shadow">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 border-b">
+          <tr>
+            <th class="px-3 py-2 w-12">
+              <input id="check-all" type="checkbox" class="align-middle">
+            </th>
+            <th class="text-left px-4 py-2">Nom</th>
+            <th class="text-left px-4 py-2">Type MIME</th>
+            <th class="text-left px-4 py-2">Catégorie</th>
+          </tr>
+        </thead>
+        <tbody id="shared-list">
+          {% for file in user_files %}
+            <tr class="border-b hover:bg-gray-50" data-category="{{ file.category }}">
+              <td class="px-3 py-2">
+                <input
+                  type="checkbox"
+                  class="row-check align-middle"
+                  name="file_ids"
+                  value="{{ file.id }}"
+                  data-bytes="{{ file.size or 0 }}">
+              </td>
+              <td class="px-4 py-2">{{ file.filename }}</td>
+              <td class="px-4 py-2">{{ file.content_type }}</td>
+              <td class="px-4 py-2">{{ file.category }}</td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="4" class="px-4 py-3 text-gray-500">Aucun fichier disponible.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <button type="submit" class="btn btn-primary px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">
+        Partager la sélection
+      </button>
+      <span id="dl-counter" class="hidden text-xs text-gray-600"></span>
+    </div>
+  </form>
+{% endblock %}
