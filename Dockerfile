@@ -52,4 +52,4 @@ COPY --chown=appuser:appuser entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
-CMD ["/app/entrypoint.sh"]
+CMD ["bash", "-lc", "exec gunicorn -b 0.0.0.0:${PORT:-8000} 'app:create_app()'"]
