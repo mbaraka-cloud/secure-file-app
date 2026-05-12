@@ -68,7 +68,7 @@ secure-file-app/
 ├── requirements.txt
 ├── run.py
 └── config.py
-...
+´´´
 
 
 ## Installation locale
