@@ -25,3 +25,40 @@ env/
 Thumbs.db
 .vscode/
 .idea/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Backups and database dumps
+backups/
+*.sql
+*.db
+*.sqlite
+*.sqlite3
+
+# Certificates and keys
+cert/
+certs/
+keys/
+*.pem
+*.key
+*.crt
+id_rsa
+id_rsa.pub
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
